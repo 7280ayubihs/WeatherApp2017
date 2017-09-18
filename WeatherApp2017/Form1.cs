@@ -56,14 +56,18 @@ namespace WeatherApp2017
                 "18時",
                 "21時" }
             );
-            comboBoxTimeSelect.SelectedIndex = 0;
+            comboBoxTimeSelect.SelectedIndex = 4;
 
             // 予想日コンボボックスの初期設定
             comboBoxExpectedDateSelect.Items.AddRange(new string[] {
                 "翌日",
-                "今日"
+                "当日"
             });
             comboBoxExpectedDateSelect.SelectedIndex = 0;
+
+            // アルゴリズムコンボボックスの初期設定
+            comboBoxAlgorithmSelect.Items.Add("DT");
+            comboBoxAlgorithmSelect.SelectedIndex = 0;
         }
 
         private void buttonTest_Click(object sender, EventArgs e)
@@ -87,12 +91,24 @@ namespace WeatherApp2017
                 jsonGetSensorData.ToString());
 
             // DataGridViewにjsonデータを表示
-            //TODO: 
+            //TODO: jsonオブジェクトの中身を DataGridView に表示
+
+            // json->csv文字列変換
+            //TODO: データを絞り込みながら、csv文字列に変換するメソッドを追加
+            string csvWeatherStr = "aaa,bbb|ccc,ddd";
+
+            // 機械学習ツールへ渡すパラメータを作成
+            string pythonArguments = String.Format(" {0} {1} {2} {3} {4}",
+                (csvWeatherStr.Length - csvWeatherStr.Replace("|", "").Length + 1),
+                csvWeatherStr,
+                comboBoxExpectedDateSelect.SelectedItem.ToString(),
+                comboBoxAlgorithmSelect.SelectedItem.ToString(),
+                comboBoxPointSelect.SelectedItem.ToString());
 
             // Python 実行して、終了まで待機
             Process ps = new Process();
             ps.StartInfo.FileName = pythonExePath;
-            ps.StartInfo.Arguments = pythonScriptPath;
+            ps.StartInfo.Arguments = pythonScriptPath + pythonArguments;
             ps.Start();
             ps.WaitForExit();
 

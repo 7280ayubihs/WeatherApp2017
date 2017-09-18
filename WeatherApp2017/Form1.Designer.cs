@@ -38,7 +38,7 @@
             this.pictureBoxActual = new System.Windows.Forms.PictureBox();
             this.comboBoxPointSelect = new System.Windows.Forms.ComboBox();
             this.comboBoxExpectedDateSelect = new System.Windows.Forms.ComboBox();
-            this.comboBox1 = new System.Windows.Forms.ComboBox();
+            this.comboBoxAlgorithmSelect = new System.Windows.Forms.ComboBox();
             this.dataGridView1 = new System.Windows.Forms.DataGridView();
             this.Date = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.Time = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -143,15 +143,15 @@
             this.comboBoxExpectedDateSelect.Size = new System.Drawing.Size(200, 32);
             this.comboBoxExpectedDateSelect.TabIndex = 39;
             // 
-            // comboBox1
+            // comboBoxAlgorithmSelect
             // 
-            this.comboBox1.Cursor = System.Windows.Forms.Cursors.IBeam;
-            this.comboBox1.Font = new System.Drawing.Font("MS UI Gothic", 18F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
-            this.comboBox1.FormattingEnabled = true;
-            this.comboBox1.Location = new System.Drawing.Point(219, 49);
-            this.comboBox1.Name = "comboBox1";
-            this.comboBox1.Size = new System.Drawing.Size(200, 32);
-            this.comboBox1.TabIndex = 61;
+            this.comboBoxAlgorithmSelect.Cursor = System.Windows.Forms.Cursors.IBeam;
+            this.comboBoxAlgorithmSelect.Font = new System.Drawing.Font("MS UI Gothic", 18F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
+            this.comboBoxAlgorithmSelect.FormattingEnabled = true;
+            this.comboBoxAlgorithmSelect.Location = new System.Drawing.Point(219, 49);
+            this.comboBoxAlgorithmSelect.Name = "comboBoxAlgorithmSelect";
+            this.comboBoxAlgorithmSelect.Size = new System.Drawing.Size(200, 32);
+            this.comboBoxAlgorithmSelect.TabIndex = 61;
             // 
             // dataGridView1
             // 
@@ -213,7 +213,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(964, 436);
             this.Controls.Add(this.dataGridView1);
-            this.Controls.Add(this.comboBox1);
+            this.Controls.Add(this.comboBoxAlgorithmSelect);
             this.Controls.Add(this.comboBoxExpectedDateSelect);
             this.Controls.Add(this.comboBoxPointSelect);
             this.Controls.Add(this.textBoxPointB);
@@ -244,7 +244,7 @@
         private System.Windows.Forms.PictureBox pictureBoxActual;
         private System.Windows.Forms.ComboBox comboBoxPointSelect;
         private System.Windows.Forms.ComboBox comboBoxExpectedDateSelect;
-        private System.Windows.Forms.ComboBox comboBox1;
+        private System.Windows.Forms.ComboBox comboBoxAlgorithmSelect;
         private System.Windows.Forms.DataGridView dataGridView1;
         private System.Windows.Forms.DataGridViewTextBoxColumn Date;
         private System.Windows.Forms.DataGridViewTextBoxColumn Time;
