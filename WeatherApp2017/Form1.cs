@@ -43,6 +43,13 @@ namespace WeatherApp2017
                     comboBoxPointSelect.Items.Add(jobj["Point"]["Items"][i].ToString());
                 }
                 comboBoxPointSelect.SelectedItem = jobj["Point"]["Initial"].ToString();
+
+                // アルゴリズムコンボボックスの初期設定
+                for (int i = 0; i < jobj["Algorithm"]["Items"].Count(); i++)
+                {
+                    comboBoxAlgorithmSelect.Items.Add(jobj["Algorithm"]["Items"][i].ToString());
+                }
+                comboBoxAlgorithmSelect.SelectedItem = jobj["Algorithm"]["Initial"].ToString();
             }
 
             // コンボボックスの初期設定
@@ -64,16 +71,12 @@ namespace WeatherApp2017
                 "当日"
             });
             comboBoxExpectedDateSelect.SelectedIndex = 0;
-
-            // アルゴリズムコンボボックスの初期設定
-            comboBoxAlgorithmSelect.Items.Add("DT");
-            comboBoxAlgorithmSelect.SelectedIndex = 0;
         }
 
         private void buttonTest_Click(object sender, EventArgs e)
         {
             // 正解データを Weather Hacks から取得して表示
-            string uriWeatherHacks = UriGenerator.GenerateWeatherHacksUri("東京");
+            string uriWeatherHacks = UriGenerator.GenerateWeatherHacksUri(comboBoxPointSelect.SelectedItem.ToString());
             JObject jsonWeatherHacks = JObject.Parse(new HttpClient().GetStringAsync(uriWeatherHacks).Result);
             pictureBoxActual.Image = GetWeatherBitmap((string)(jsonWeatherHacks["forecasts"][0]["telop"] as JValue).Value);
 
@@ -91,13 +94,23 @@ namespace WeatherApp2017
                 jsonGetSensorData.ToString());
 
             // DataGridViewにjsonデータを表示
-            //TODO: jsonオブジェクトの中身を DataGridView に表示
-
-            // json->csv文字列変換
-            //TODO: データを絞り込みながら、csv文字列に変換するメソッドを追加
-            string csvWeatherStr = "aaa,bbb|ccc,ddd";
+            dataGridView1.Rows.Clear();
+            for (int i = 0; i < jsonGetSensorData.Count; i++)
+            {
+                dataGridView1.Rows.Add(new string[] {
+                    jsonGetSensorData[i]["id"].ToString(),
+                    jsonGetSensorData[i]["year"].ToString(),
+                    jsonGetSensorData[i]["month"].ToString(),
+                    jsonGetSensorData[i]["day"].ToString(),
+                    jsonGetSensorData[i]["hour"].ToString(),
+                    double.Parse(jsonGetSensorData[i]["temperture"].ToString()).ToString("F1"),
+                    double.Parse(jsonGetSensorData[i]["humidity"].ToString()).ToString("F1"),
+                    double.Parse(jsonGetSensorData[i]["pressure"].ToString()).ToString("F1")
+                });
+            }
 
             // 機械学習ツールへ渡すパラメータを作成
+            string csvWeatherStr = json2csv(jsonGetSensorData, comboBoxPointSelect.SelectedIndex + 1);
             string pythonArguments = String.Format(" {0} {1} {2} {3} {4}",
                 (csvWeatherStr.Length - csvWeatherStr.Replace("|", "").Length + 1),
                 csvWeatherStr,
@@ -114,6 +127,97 @@ namespace WeatherApp2017
 
             // 終了したら、画面に結果を表示
             pictureBoxExpect.Image = GetWeatherBitmap(ps.ExitCode);
+        }
+
+        /// <summary>
+        /// サーバから取得したjson配列を機械学習ツールに渡せる形式に変換する。
+        /// </summary>
+        /// <param name="jarray"></param>
+        /// <param name="id">今のところ、1始まり？</param>
+        /// <returns></returns>
+        private string json2csv(JArray jarray, int id)
+        {
+            // jarrayをIDで絞り込み、jarray2に格納する。
+            JArray jarray2 = new JArray();
+            for (int i = 0; i < jarray.Count; i++)
+            {
+                if (int.Parse(jarray[i]["id"].ToString()) == id)
+                {
+                    jarray2.Add(jarray[i]);
+                }
+            }
+
+            // CSV文字列化する変数
+            bool[] flag = new bool[9];
+            int[] year = new int[9];
+            int[] month = new int[9];
+            int[] day = new int[9];
+            int[] hour = new int[9];
+            double[] temperture = new double[9];
+            double[] humidity = new double[9];
+            double[] pressure = new double[9];
+
+            // json配列の先頭データを基に初期化
+            DateTime dateTime = new DateTime(
+                int.Parse(jarray2[0]["year"].ToString()), int.Parse(jarray2[0]["month"].ToString()), int.Parse(jarray2[0]["day"].ToString()),
+                int.Parse(jarray2[0]["hour"].ToString()), 0, 0);
+            for (int i = 0; i < 9; i++)
+            {
+                flag[i] = false;
+                year[i] = dateTime.Year;
+                month[i] = dateTime.Month;
+                day[i] = dateTime.Day;
+                hour[i] = dateTime.Hour;
+                temperture[i] = 0.0;
+                humidity[i] = 0.0;
+                pressure[i] = 0.0;
+                dateTime = dateTime.AddHours(3);
+            }
+
+            // データを格納しながら、複数項目があった場合は、2つの値の平均を取得する。
+            for (int i = 0; i < jarray2.Count; i++)
+            {
+                for (int j = 0; j < 9; j++)
+                {
+                    if (year[j] != int.Parse(jarray2[i]["year"].ToString())) continue;
+                    if (month[j] != int.Parse(jarray2[i]["month"].ToString())) continue;
+                    if (day[j] != int.Parse(jarray2[i]["day"].ToString())) continue;
+                    if (hour[j] != int.Parse(jarray2[i]["hour"].ToString())) continue;
+
+                    // 既に、データが格納されているかによって処理分岐
+                    if (flag[j])
+                    {
+                        // 既にデータが存在する
+                        temperture[j] = (temperture[j] + double.Parse(jarray2[i]["temperture"].ToString())) / 2.0;
+                        humidity[j] = (humidity[j] + double.Parse(jarray2[i]["humidity"].ToString())) / 2.0;
+                        pressure[j] = (pressure[j] + double.Parse(jarray2[i]["pressure"].ToString())) / 2.0;
+                    }
+                    else
+                    {
+                        // 新規のデータ
+                        temperture[j] = double.Parse(jarray2[i]["temperture"].ToString());
+                        humidity[j] = double.Parse(jarray2[i]["humidity"].ToString());
+                        pressure[j] = double.Parse(jarray2[i]["pressure"].ToString());
+                    }
+
+                    // フラグを有効かして、次のjsonデータを処理
+                    flag[j] = true;
+                    break;
+                }
+            }
+
+            List<string> str = new List<string>();
+            for (int i = 0; i < 9; i++)
+            {
+                if (flag[i])
+                {
+                    str.Add(String.Format("{0},{1},{2},{3},{4},{5},{6}",
+                        year[i], month[i], day[i], hour[i],
+                        temperture[i], humidity[i], pressure[i]));
+                }
+            }
+
+            return String.Join("|", str.ToArray());
         }
 
         /// <summary>
