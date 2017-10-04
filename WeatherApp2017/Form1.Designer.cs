@@ -57,6 +57,7 @@
             this.Temperature = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.Humidity = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.Pressure = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.accuracyRateLabel = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxExpect)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxActual)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).BeginInit();
@@ -154,6 +155,7 @@
             this.comboBoxExpectedDateSelect.Name = "comboBoxExpectedDateSelect";
             this.comboBoxExpectedDateSelect.Size = new System.Drawing.Size(200, 32);
             this.comboBoxExpectedDateSelect.TabIndex = 39;
+            this.comboBoxExpectedDateSelect.SelectedIndexChanged += new System.EventHandler(this.comboBoxExpectedDateSelect_SelectedIndexChanged);
             // 
             // comboBoxAlgorithmSelect
             // 
@@ -164,6 +166,7 @@
             this.comboBoxAlgorithmSelect.Name = "comboBoxAlgorithmSelect";
             this.comboBoxAlgorithmSelect.Size = new System.Drawing.Size(200, 32);
             this.comboBoxAlgorithmSelect.TabIndex = 61;
+            this.comboBoxAlgorithmSelect.SelectedIndexChanged += new System.EventHandler(this.comboBoxAlgorithmSelect_SelectedIndexChanged);
             // 
             // dataGridView1
             // 
@@ -272,11 +275,22 @@
             this.Pressure.ReadOnly = true;
             this.Pressure.Width = 96;
             // 
+            // accuracyRateLabel
+            // 
+            this.accuracyRateLabel.Font = new System.Drawing.Font("メイリオ", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
+            this.accuracyRateLabel.Location = new System.Drawing.Point(220, 88);
+            this.accuracyRateLabel.Name = "accuracyRateLabel";
+            this.accuracyRateLabel.Size = new System.Drawing.Size(200, 32);
+            this.accuracyRateLabel.TabIndex = 63;
+            this.accuracyRateLabel.Text = "正解率 999.99%";
+            this.accuracyRateLabel.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(964, 436);
+            this.Controls.Add(this.accuracyRateLabel);
             this.Controls.Add(this.dataGridView1);
             this.Controls.Add(this.comboBoxAlgorithmSelect);
             this.Controls.Add(this.comboBoxExpectedDateSelect);
@@ -319,6 +333,7 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn Temperature;
         private System.Windows.Forms.DataGridViewTextBoxColumn Humidity;
         private System.Windows.Forms.DataGridViewTextBoxColumn Pressure;
+        private System.Windows.Forms.Label accuracyRateLabel;
     }
 }
 

@@ -12,8 +12,33 @@ namespace WeatherApp2017
 {
     public partial class Form1 : Form
     {
+        /// <summary>
+        /// 初期化済みフラグ
+        /// </summary>
+        private bool isInitialized = false;
+
+        /// <summary>
+        /// pyhton.exeのパスです。
+        /// 設定ファイルの内容で上書きされます。
+        /// </summary>
         private string pythonExePath = "python.exe";
+
+        /// <summary>
+        /// 実行されるpython scriptのパスです。
+        /// 設定ファイルの内容で上書きされます。
+        /// </summary>
         private string pythonScriptPath = "python.py";
+
+        /// <summary>
+        /// アルゴリズムの表示名（DisplayName）と略称（Abbreviation）を紐付けるオブジェクトです。
+        /// 表示名が key で、略称を value としています。。
+        /// </summary>
+        private Dictionary<string, string> algorithmMap = new Dictionary<string, string>();
+
+        /// <summary>
+        /// 設定ファイルから、正解率ロードする領域です。
+        /// </summary>
+        private double[,] accuracyRateArray;
 
         public Form1()
         {
@@ -24,7 +49,7 @@ namespace WeatherApp2017
         {
             // 設定ファイルをロード
             List<string> pointItems = new List<string>();
-            using (StreamReader sr = new StreamReader(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "\\div22.json"))
+            using (StreamReader sr = new StreamReader(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "div22.json")))
             {
                 JObject jobj = JObject.Parse(sr.ReadToEnd()); ;
 
@@ -44,12 +69,27 @@ namespace WeatherApp2017
                 }
                 comboBoxPointSelect.SelectedItem = jobj["Point"]["Initial"].ToString();
 
-                // アルゴリズムコンボボックスの初期設定
-                for (int i = 0; i < jobj["Algorithm"]["Items"].Count(); i++)
+                // アルゴリズムコンボボックス、および、正解率配列の初期設定
+                accuracyRateArray = new double[jobj["Algorithm"]["Items"]["DisplayName"].Count(), 2];
+                for (int i = 0; i < jobj["Algorithm"]["Items"]["DisplayName"].Count(); i++)
                 {
-                    comboBoxAlgorithmSelect.Items.Add(jobj["Algorithm"]["Items"][i].ToString());
+                    string key = jobj["Algorithm"]["Items"]["DisplayName"][i].ToString();
+                    string value = jobj["Algorithm"]["Items"]["Abbreviation"][i].ToString();
+                    double accuracyRate = double.Parse(jobj["Algorithm"]["Items"]["AccuracyRate"][i].ToString());
+                    double accuracyRateNextDay = double.Parse(jobj["Algorithm"]["Items"]["AccuracyRateNextDay"][i].ToString());
+
+                    comboBoxAlgorithmSelect.Items.Add(key);
+                    algorithmMap.Add(key, value);
+
+                    // 当日の正解率
+                    accuracyRateArray[i, 0] = accuracyRate;
+
+                    // 翌日の正解率
+                    accuracyRateArray[i, 1] = accuracyRateNextDay;
                 }
                 comboBoxAlgorithmSelect.SelectedItem = jobj["Algorithm"]["Initial"].ToString();
+
+                // 正解率配列の初期設定
             }
 
             // コンボボックスの初期設定
@@ -67,30 +107,59 @@ namespace WeatherApp2017
 
             // 予想日コンボボックスの初期設定
             comboBoxExpectedDateSelect.Items.AddRange(new string[] {
-                "翌日",
-                "当日"
+                "当日",
+                "翌日"
             });
             comboBoxExpectedDateSelect.SelectedIndex = 0;
+
+            // 初期化済みフラグを更新
+            isInitialized = true;
+
+            // 正解率ラベルの初期化
+            updateAccuracyRateLabel();
+        }
+
+        private void comboBoxAlgorithmSelect_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            // 正解率ラベルの更新
+            if (isInitialized)
+            {
+                updateAccuracyRateLabel();
+            }
+        }
+
+        private void comboBoxExpectedDateSelect_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            // 正解率ラベルの更新
+            if (isInitialized)
+            {
+                updateAccuracyRateLabel();
+            }
         }
 
         private void buttonTest_Click(object sender, EventArgs e)
         {
-            // 正解データを Weather Hacks から取得して表示
-            string uriWeatherHacks = UriGenerator.GenerateWeatherHacksUri(comboBoxPointSelect.SelectedItem.ToString());
-            JObject jsonWeatherHacks = JObject.Parse(new HttpClient().GetStringAsync(uriWeatherHacks).Result);
-            pictureBoxActual.Image = GetWeatherBitmap((string)(jsonWeatherHacks["forecasts"][0]["telop"] as JValue).Value);
-
             // サーバに問い合わせて、jsonデータを取得
             string uriGetSensorData = UriGenerator.GenerateGetSensorDataUri(
                 dateTimePicker.Value.Year,
-                dateTimePicker.Value.Month, 
+                dateTimePicker.Value.Month,
                 dateTimePicker.Value.Day,
                 comboBoxTimeSelect.SelectedIndex * 3);
             JArray jsonGetSensorData = JArray.Parse(new HttpClient().GetStringAsync(uriGetSensorData).Result);
 
-            // 一旦、ファイルに保存
+            // jsonデータが0件の場合、エラーダイアログを表示してなにもしない。
+            if (jsonGetSensorData.Count < 1)
+            {
+                MessageBox.Show("サーバとの通信に失敗したか、指定した日時のデータが存在しません。",
+                    "ERROR",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+                return;
+            }
+
+            // サーバから取得したjsonデータを
             File.WriteAllText(
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "tokyo_weather.txt"),
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "get_sensor_data.txt"),
                 jsonGetSensorData.ToString());
 
             // DataGridViewにjsonデータを表示
@@ -111,12 +180,32 @@ namespace WeatherApp2017
 
             // 機械学習ツールへ渡すパラメータを作成
             string csvWeatherStr = json2csv(jsonGetSensorData, comboBoxPointSelect.SelectedIndex + 1);
-            string pythonArguments = String.Format(" {0} {1} {2} {3} {4}",
+            if (csvWeatherStr == null)
+            {
+                MessageBox.Show(string.Format("指定した地点(ID: {0})のデータが存在しません。", comboBoxPointSelect.SelectedIndex + 1),
+                    "ERROR",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+                return;
+            }
+            string pythonArguments = String.Format(" {0} \"{1}\" {2} {3} {4}",
                 (csvWeatherStr.Length - csvWeatherStr.Replace("|", "").Length + 1),
                 csvWeatherStr,
                 comboBoxExpectedDateSelect.SelectedItem.ToString(),
-                comboBoxAlgorithmSelect.SelectedItem.ToString(),
+                algorithmMap[comboBoxAlgorithmSelect.SelectedItem.ToString()],
                 comboBoxPointSelect.SelectedItem.ToString());
+
+            // 機械学習ツールへ渡すパラメータを作成
+            // ※これは、機械学習ツールとの連携確認用
+            /*
+            string csvWeatherStr = "2011,12,31,3,3.5,37,1018.1|2011,12,31,6,3.2,41,1019.1|2011,12,31,9,3,48,1020.3|2011,12,31,12,8.6,29,1018.2|2011,12,31,15,9.5,24,1017.8|2011,12,31,18,8.2,30,1019.1|2011,12,31,21,5.4,39,1019.5|2012,1,1,3,4.4,41,1018.4";
+            string pythonArguments = String.Format(" {0} {1} {2} {3} {4}",
+                (csvWeatherStr.Length - csvWeatherStr.Replace("|", "").Length + 1),
+                csvWeatherStr,
+                "当日",
+                "DT",
+                "東京");
+            */
 
             // Python 実行して、終了まで待機
             Process ps = new Process();
@@ -127,6 +216,17 @@ namespace WeatherApp2017
 
             // 終了したら、画面に結果を表示
             pictureBoxExpect.Image = GetWeatherBitmap(ps.ExitCode);
+
+            // 正解データを Weather Hacks から取得して表示
+            string uriWeatherHacks = UriGenerator.GenerateWeatherHacksUri(comboBoxPointSelect.SelectedItem.ToString());
+            JObject jsonWeatherHacks = JObject.Parse(new HttpClient().GetStringAsync(uriWeatherHacks).Result);
+            pictureBoxActual.Image = GetWeatherBitmap((string)(jsonWeatherHacks["forecasts"][0]["telop"] as JValue).Value);
+        }
+
+        private void updateAccuracyRateLabel()
+        {
+            accuracyRateLabel.Text = string.Format("正解率 {0:0.00}%",
+                accuracyRateArray[comboBoxAlgorithmSelect.SelectedIndex, comboBoxExpectedDateSelect.SelectedIndex]);
         }
 
         /// <summary>
@@ -146,6 +246,9 @@ namespace WeatherApp2017
                     jarray2.Add(jarray[i]);
                 }
             }
+
+            // 指定されたIDのデータが存在しない場合、nullを返す。
+            if (jarray2.Count < 1) return null;
 
             // CSV文字列化する変数
             bool[] flag = new bool[9];
@@ -217,7 +320,11 @@ namespace WeatherApp2017
                 }
             }
 
-            return String.Join("|", str.ToArray());
+            if (1 <= str.Count)
+            {
+                return String.Join("|", str.ToArray());
+            }
+            return null;
         }
 
         /// <summary>
