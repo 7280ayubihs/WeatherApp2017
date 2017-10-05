@@ -9,11 +9,12 @@
 ### 使い方
 1. [Releases page](../../releases) から
 最新バージョンをダンロードし、zipファイルを解凍します。
-2. 解凍された際に作成されるdiv22.jsonの内容を適切な値に修正し、次のように配置してます。
+2. 解凍された際に作成される```div22.json```の内容を適切な値に修正し、次のように配置してます。
 ```
 C:\Users\<ログインユーザ名>\div22.json
 ```
-3. WeatherApp2017.exeを実行してください。
+3. ```WeatherApp2017.exe```、および、```Newtonsoft.Json.dll```を、```calcStatInfo.py```と同じディレクトリに配置して、   
+```WeatherApp2017.exe```実行してください。
 
 ### 作成者
 Shibuya Syuta (7280ayubihs@gmail.com)
