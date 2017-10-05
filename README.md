@@ -14,7 +14,7 @@
 C:\Users\<ログインユーザ名>\div22.json
 ```
 3. ```WeatherApp2017.exe```、および、```Newtonsoft.Json.dll```を、```calcStatInfo.py```と同じディレクトリに配置して、   
-```WeatherApp2017.exe```実行してください。
+```WeatherApp2017.exe```を実行してください。
 
 ### 作成者
 Shibuya Syuta (7280ayubihs@gmail.com)
