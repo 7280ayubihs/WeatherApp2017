@@ -188,7 +188,7 @@ namespace WeatherApp2017
                     MessageBoxIcon.Error);
                 return;
             }
-            string pythonArguments = String.Format(" {0} \"{1}\" {2} {3} {4}",
+            string pythonArguments = String.Format("{0} \"{1}\" {2} {3} {4}",
                 (csvWeatherStr.Length - csvWeatherStr.Replace("|", "").Length + 1),
                 csvWeatherStr,
                 comboBoxExpectedDateSelect.SelectedItem.ToString(),
@@ -210,7 +210,7 @@ namespace WeatherApp2017
             // Python 実行して、終了まで待機
             Process ps = new Process();
             ps.StartInfo.FileName = pythonExePath;
-            ps.StartInfo.Arguments = pythonScriptPath + pythonArguments;
+            ps.StartInfo.Arguments = string.Join(" ", new string[] { pythonScriptPath, pythonArguments });
             ps.Start();
             ps.WaitForExit();
 
